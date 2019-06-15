@@ -1,73 +1,84 @@
-import pandas as pd
+import numpy as np
 from sklearn.metrics import classification_report
-from sklearn.feature_selection import VarianceThreshold
 
 #local imports
-from Data_Utility import get_raw_data, get_Xy, get_train_test
-from models import get_models
+from Utility import get_raw_data, get_Xy, get_train_test, get_models
+from Graphs import Graphs
 
 
-data = None
-cols_to_scale = ['col3','col64','col294']
-
-def set_data():
-    global data
-    data = get_raw_data()
-
-def simple_scaling():
-
-    for col in cols_to_scale:
-        data[col] = data[col] / data[col].max()
-
-    return data
+class Normalize:
 
 
+    def __init__(self,X,y,raw_data,cols_to_scale=['col3','col64','col294']):
 
-def min_max_scaling():
-
-    for col in cols_to_scale:
-        data[col] = (data[col] - data[col].min()) / (data[col].max() - data[col].min())
-
-    return data
-
-def z_score_scaling():
-
-    for col in cols_to_scale:
-        data[col] = (data[col] - data[col].mean()) / data[col].std()
-
-    return data
+        self.X = X
+        self.y = y
+        self.data = raw_data
+        self.cols_to_scale = cols_to_scale
 
 
+    def simple_scaling(self):
 
-set_data()
+        print('Simple scaling ...')
 
-scaling_methods = [simple_scaling,min_max_scaling,z_score_scaling]
+        for col in self.cols_to_scale:
+            self.data[col] = self.data[col] / self.data[col].max()
+
+        return self.data
 
 
-scaling_methods = {
-	"simple_scaling": simple_scaling,
-	"min_max_scaling": min_max_scaling,
-	"z_score_scaling": z_score_scaling
-}
+    def min_max_scaling(self):
 
-for name,method in scaling_methods.items():
+        print('Min max scaling...')
 
-    X, y, target_names = get_Xy(method())
+        for col in self.cols_to_scale:
+            self.data[col] = (self.data[col] - self.data[col].min()) / (self.data[col].max() - self.data[col].min())
 
-    #combine variance with normalization, reduce the no of columns based on variance
-    # comment this section to only used normaliztion with all features
-    sel = VarianceThreshold(threshold=(.8 * (1 - .8)))
-    X = sel.fit_transform(X)
+        return self.data
 
-    X_train, X_test, y_train, y_test = get_train_test(features=X, target=y, test_size=0.25)
 
-    print('Scaling method : {0}'.format(name))
-    for name, clf in get_models().items():
-        clf.fit(X_train, y_train)
-        predictions = clf.predict(X_test)
-        clf_report = classification_report(y_test, predictions,
-                                           target_names=target_names.keys())
-        score = clf.score(X_test, y_test)
+    def z_score_scaling(self):
 
-        print('Model Evaluation : {0}, Accuracy : {1}'.format(name,score))
-        #print('Report: {}'.format(clf_report))
+        print('Z_score scaling ...')
+
+        for col in self.cols_to_scale:
+            self.data[col] = (self.data[col] - self.data[col].mean()) / self.data[col].std()
+
+        return self.data
+
+
+    def compute_Scaling(self):
+
+        print('Scaling features... ')
+
+        scaling_methods = {
+            "simple_scaling": self.simple_scaling,
+            "min_max_scaling": self.min_max_scaling,
+            "z_score_scaling": self.z_score_scaling
+        }
+
+        target_names = np.array(['A', 'B', 'C', 'D', 'E'])
+
+        for name,method in scaling_methods.items():
+
+            data = method()
+            X = data.drop('target',axis=1)
+            y = data['target']
+
+            X_train, X_test, y_train, y_test = get_train_test(features=X, target=y, test_size=0.25)
+
+            print('Scaling method : {0}'.format(name))
+            for name, clf in get_models().items():
+                clf.fit(X_train, y_train)
+                predictions = clf.predict(X_test)
+                clf_report = classification_report(y_test, predictions,
+                                                   target_names=target_names)
+                score = clf.score(X_test, y_test)
+
+                print('Model Evaluation : {0}, Accuracy : {1}'.format(name,score))
+                print('Report: {}'.format(clf_report))
+
+                plots = Graphs(self.X, self.y, self.data)
+
+                plots.plot_ConfusionMatrix(y_test=y_test, y_pred=predictions, classes=target_names,
+                                           title=name + ' Normaliztion')

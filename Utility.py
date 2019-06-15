@@ -2,7 +2,18 @@ import pandas as pd
 from  sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
-target_names = {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5}
+
+# estimators
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+
+
+target_names = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4}
 
 def mapping(dataframe):
     data = dataframe.replace({'target': target_names})
@@ -33,8 +44,6 @@ def get_Xy(dataframe=None):
     return X,y,target_names
 
 
-
-
 def get_train_test(features,target,test_size=0.20,random_state=152):
 
     X_train,X_test, y_train, y_test = train_test_split(features, target, test_size=test_size, random_state=random_state)
@@ -42,7 +51,24 @@ def get_train_test(features,target,test_size=0.20,random_state=152):
     return X_train,X_test, y_train, y_test
 
 
+def get_models(all=True,estimator_name='KNeighborsClassifier'):
 
+    models = {
+        "KNeighborsClassifier": KNeighborsClassifier(leaf_size=30,p=2),
+        "Naive_Bayes": GaussianNB(),
+        "LogisticRegression": LogisticRegression(),
+        "DecisionTreeClassifier": DecisionTreeClassifier(),
+        "RandomForestClassifier": RandomForestClassifier(n_estimators=100),
+        "MLP": MLPClassifier()
+    }
+
+    if all ==  False:
+
+        return models[estimator_name]
+
+    else:
+
+        return models
 
 
 
